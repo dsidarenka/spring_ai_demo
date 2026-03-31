@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:8080
+
+
+###
+GET {{baseUrl}}/chat/simple?message=Hello
+
+###
+GET {{baseUrl}}/chat/expert?message=Explain+the+Docker+concept+for+me
+
+###
+GET {{baseUrl}}/chat/structured?name=Jim+Carrey
+
+###
+GET {{baseUrl}}/chat/structured?name=Alan+Rickman
+
+
+
+
+

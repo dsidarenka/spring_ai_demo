@@ -1,0 +1,20 @@
+# General MacOs
+.DS_Store
+__MACOSX/
+
+# Gradle
+/.gradle/
+/build/
+gradle-app.setting
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+# Avoid ignore Gradle wrappper properties
+!gradle-wrapper.properties
+
+
+*.class
+*.jar
+out/
+.idea/
+*.iml
+

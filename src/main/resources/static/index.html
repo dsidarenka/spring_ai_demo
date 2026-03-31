@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spring AI Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 0.4rem;
+      color: #1a1a2e;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      max-width: 860px;
+      margin: 0 auto 1.5rem;
+      border-bottom: 2px solid #dde1e7;
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 0.55rem 1.3rem;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      border-radius: 6px 6px 0 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab:hover { color: #1a73e8; }
+
+    .tab.active {
+      color: #1a73e8;
+      border-bottom-color: #1a73e8;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .cards {
+      display: grid;
+      gap: 1.5rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: #e8f4fd;
+      color: #1a73e8;
+    }
+
+    .badge.post {
+      background: #fef3e8;
+      color: #d97706;
+    }
+
+    .endpoint-path {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 1.2rem;
+      line-height: 1.5;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid #dde1e7;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus { border-color: #1a73e8; }
+
+    button {
+      padding: 0.55rem 1.2rem;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: #1558b0; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    button.clear-btn {
+      background: transparent;
+      color: #888;
+      border: 1px solid #dde1e7;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    button.clear-btn:hover { background: #f0f0f0; color: #444; }
+
+    /* ── Response box ── */
+    .response-box {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .response-box.visible { display: block; }
+
+    .response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+    }
+
+    .response-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+    }
+
+    .response-content {
+      background: #f8f9fa;
+      border: 1px solid #e4e7ec;
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .response-content.error {
+      background: #fff5f5;
+      border-color: #fca5a5;
+      color: #b91c1c;
+    }
+
+    /* ── Structured output table ── */
+    .actor-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .actor-table th {
+      text-align: left;
+      padding: 0.4rem 0.7rem;
+      background: #f0f4ff;
+      color: #555;
+      font-weight: 600;
+      border-bottom: 1px solid #dde1e7;
+    }
+
+    .actor-table td {
+      padding: 0.5rem 0.7rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* ── ETL Pipeline ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pipeline-step {
+      flex: 1;
+      min-width: 90px;
+      text-align: center;
+      padding: 0.75rem 0.5rem;
+      background: #fff;
+      border: 1px solid #e4e7ec;
+      border-radius: 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .pipeline-step.active {
+      border-color: #1a73e8;
+      background: #f0f6ff;
+    }
+
+    .step-icon { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .step-label { font-weight: 700; font-size: 0.85rem; color: #1a1a2e; }
+    .step-desc { font-size: 0.72rem; color: #888; margin-top: 0.1rem; }
+
+    .pipeline-arrow { color: #ccc; font-size: 1.4rem; flex-shrink: 0; }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #dde1e7;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 0.75rem;
+    }
+
+    textarea:focus { border-color: #1a73e8; }
+
+    .ingest-result {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #166534;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+    }
+
+    /* ── Metrics ── */
+    .metrics-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .metrics-refresh-btn {
+      padding: 0.45rem 1.1rem;
+      font-size: 0.88rem;
+    }
+
+    .auto-refresh-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.88rem;
+      color: #555;
+      cursor: pointer;
+    }
+
+    .auto-refresh-label input { cursor: pointer; }
+
+    .metrics-timestamp {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-left: auto;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-card {
+      background: #f8f9fa;
+      border: 1px solid #e4e7ec;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .metric-card-name {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.78rem;
+      color: #1a73e8;
+      font-weight: 700;
+      word-break: break-all;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid #ebebeb;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .metric-no-data {
+      font-size: 0.85rem;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    .metric-tags-note {
+      margin-top: 0.6rem;
+      font-size: 0.75rem;
+      color: #aaa;
+    }
+
+    /* ── Recursive Advisor loop diagram ── */
+    .loop-diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 1.4rem;
+      padding: 1.2rem 1rem;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+
+    .loop-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .loop-box {
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      min-width: 110px;
+    }
+
+    .loop-box.user    { background: #e8f4fd; color: #1558b0; border: 1px solid #c5dff7; }
+    .loop-box.llm     { background: #fef3e8; color: #b45309; border: 1px solid #fed7aa; }
+    .loop-box.tool    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .loop-box.answer  { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+    .loop-arrow-v {
+      font-size: 1rem;
+      color: #aaa;
+      line-height: 1;
+      margin: 0.1rem 0;
+    }
+
+    .loop-arrow-h { font-size: 1rem; color: #aaa; }
+
+    .loop-label {
+      font-size: 0.7rem;
+      color: #aaa;
+      margin: 0 0.2rem;
+    }
+
+    .loop-back-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.15rem;
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .loop-cond {
+      font-size: 0.72rem;
+      color: #888;
+      font-style: italic;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Tool Calling ── */
+    .tools-list {
+      margin-bottom: 1.2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .tools-list-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 0.6rem;
+    }
+
+    .tool-item {
+      padding: 0.55rem 0.75rem;
+      background: #fff;
+      border: 1px solid #e4e7ec;
+      border-radius: 6px;
+      margin-bottom: 0.4rem;
+    }
+
+    .tool-item:last-child { margin-bottom: 0; }
+
+    .tool-name {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #1a73e8;
+      margin-bottom: 0.15rem;
+    }
+
+    .tool-desc { font-size: 0.82rem; color: #666; }
+
+    .examples-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .example-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .example-chip {
+      background: #f0f4ff;
+      color: #1a73e8;
+      border: 1px solid #d0e1ff;
+      border-radius: 20px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .example-chip:hover { background: #e0eaff; border-color: #b0c8ff; color: #1558b0; }
+
+    /* ── Image upload / Vision ── */
+    .drop-zone {
+      border: 2px dashed #c5cfe0;
+      border-radius: 10px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: #fafbfc;
+      margin-bottom: 1rem;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: #1a73e8;
+      background: #f0f6ff;
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+
+    .drop-zone-icon {
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .drop-zone-text {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .drop-zone-text strong {
+      color: #1a73e8;
+      cursor: pointer;
+    }
+
+    .preview-wrap {
+      display: none;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .preview-wrap img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 8px;
+      border: 1px solid #dde1e7;
+      display: block;
+    }
+
+    .preview-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .preview-remove:hover { background: rgba(0,0,0,0.75); }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<h1>Spring AI Demo</h1>
+<p class="subtitle">Explore the Spring AI features powered by OpenAI</p>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" role="tab" onclick="switchTab('chat', this)">Text Chat</button>
+  <button class="tab" role="tab" onclick="switchTab('vision', this)">Image Recognition</button>
+  <button class="tab" role="tab" onclick="switchTab('etl', this)">ETL / RAG</button>
+  <button class="tab" role="tab" onclick="switchTab('tools', this)">Tool Calling</button>
+  <button class="tab" role="tab" onclick="switchTab('recursive', this)">Recursive Advisor</button>
+  <button class="tab" role="tab" onclick="switchTab('metrics', this)">Metrics</button>
+</nav>
+
+<!-- ══════════════════ TAB: Text Chat ══════════════════ -->
+<div class="tab-panel active" id="tab-chat">
+  <div class="cards">
+
+    <!-- Simple Chat -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/chat/simple</span>
+      </div>
+      <h2>Simple Chat</h2>
+      <p>Sends your message directly to the LLM with no system prompt. The raw model reply is returned.</p>
+      <div class="form-row">
+        <input type="text" id="simple-input" placeholder="e.g. What is the capital of France?" value="What is the capital of France?" />
+        <button id="simple-btn" onclick="callSimple()">Send</button>
+      </div>
+      <div class="response-box" id="simple-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('simple')">Clear</button>
+        </div>
+        <div class="response-content" id="simple-content"></div>
+      </div>
+    </div>
+
+    <!-- Expert Chat -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/chat/jokes</span>
+      </div>
+      <h2>Chat With System Prompt</h2>
+      <p>Same as Simple Chat, but with a specific system prompt (loaded from a text file system_prompt.txt)</p>
+      <div class="form-row">
+        <input type="text" id="expert-input" placeholder="e.g. Explain the Docker concept for me" value="Explain the Docker concept for me" />
+        <button id="expert-btn" onclick="callExpert()">Send</button>
+      </div>
+      <div class="response-box" id="expert-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('expert')">Clear</button>
+        </div>
+        <div class="response-content" id="expert-content"></div>
+      </div>
+    </div>
+
+    <!-- Structured Output -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/chat/structured</span>
+      </div>
+      <h2>Structured Output</h2>
+      <p>Asks the LLM for actor details and maps the response directly into a typed Java record: <code>ActorDetails(name, famousMovie, birthYear)</code>.</p>
+      <div class="form-row">
+        <input type="text" id="structured-input" placeholder="e.g. Jim Carrey" value="Jim Carrey" />
+        <button id="structured-btn" onclick="callStructured()">Send</button>
+      </div>
+      <div class="response-box" id="structured-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('structured')">Clear</button>
+        </div>
+        <div class="response-content" id="structured-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: Image Recognition ══════════════════ -->
+<div class="tab-panel" id="tab-vision">
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="badge post">POST</span>
+        <span class="endpoint-path">/multimodal/vision</span>
+      </div>
+      <h2>Image Recognition</h2>
+      <p>Upload any image and the model will describe in detail what it sees. Uses Spring AI's multimodal support to send both text and image content to the LLM in a single request.</p>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('vision-file').click()"
+           ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <input type="file" id="vision-file" accept="image/*" onchange="handleFileSelect(this.files[0])" />
+        <div class="drop-zone-icon">&#128247;</div>
+        <div class="drop-zone-text">
+          Drop an image here or <strong>click to browse</strong><br/>
+          <small style="color:#aaa">PNG, JPG, WEBP, GIF supported</small>
+        </div>
+      </div>
+
+      <div class="preview-wrap" id="preview-wrap">
+        <img id="preview-img" src="" alt="Preview" />
+        <button class="preview-remove" onclick="removeImage()" title="Remove image">&#10005;</button>
+      </div>
+
+      <div class="form-row">
+        <button id="vision-btn" onclick="callVision()" disabled>Recognise Image</button>
+      </div>
+
+      <div class="response-box" id="vision-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('vision')">Clear</button>
+        </div>
+        <div class="response-content" id="vision-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: ETL / RAG ══════════════════ -->
+<div class="tab-panel" id="tab-etl">
+  <div class="cards">
+
+    <!-- Ingest card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge post">POST</span>
+        <span class="endpoint-path">/etl/ingest</span>
+      </div>
+      <h2>ETL Pipeline</h2>
+      <p>Paste any text below. Spring AI will run it through the full ETL pipeline: extract the raw content, transform it into token-sized chunks via <code>TokenTextSplitter</code>, then load the chunk embeddings into an in-memory <code>SimpleVectorStore</code>.</p>
+
+      <div class="pipeline" id="etl-pipeline">
+        <div class="pipeline-step" id="step-extract">
+          <div class="step-icon">&#128196;</div>
+          <div class="step-label">Extract</div>
+          <div class="step-desc">Read raw text</div>
+        </div>
+        <div class="pipeline-arrow">&#8250;</div>
+        <div class="pipeline-step" id="step-transform">
+          <div class="step-icon">&#9986;</div>
+          <div class="step-label">Transform</div>
+          <div class="step-desc">Split into chunks</div>
+        </div>
+        <div class="pipeline-arrow">&#8250;</div>
+        <div class="pipeline-step" id="step-load">
+          <div class="step-icon">&#128451;</div>
+          <div class="step-label">Load</div>
+          <div class="step-desc">Store embeddings</div>
+        </div>
+      </div>
+
+      <textarea id="etl-text" rows="6" placeholder="Paste any text here — an article, documentation, notes…">Spring AI is a framework that simplifies building AI-powered Java applications. It provides abstractions over various AI models from providers like OpenAI, Anthropic, and others. Key features include ChatClient for conversational AI, support for structured outputs, multimodal content (images), embeddings, vector stores for RAG (Retrieval-Augmented Generation), and an ETL pipeline for processing documents. The ETL pipeline uses DocumentReader to extract content, DocumentTransformer to split and enrich it, and VectorStore to load document embeddings. RAG combines vector search with language model generation to answer questions grounded in your own data.</textarea>
+
+      <div class="form-row">
+        <button id="ingest-btn" onclick="callIngest()">Ingest Text</button>
+      </div>
+
+      <div class="response-box" id="ingest-response">
+        <div class="response-header">
+          <span class="response-label">Result</span>
+          <button class="clear-btn" onclick="clearResponse('ingest')">Clear</button>
+        </div>
+        <div class="response-content" id="ingest-content"></div>
+      </div>
+    </div>
+
+    <!-- Ask card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/etl/ask</span>
+      </div>
+      <h2>RAG Query</h2>
+      <p>Ask a question about the ingested content. Spring AI's <code>QuestionAnswerAdvisor</code> performs a similarity search on the vector store, injects the most relevant chunks as context, and the LLM answers using only that retrieved knowledge.</p>
+      <div class="form-row">
+        <input type="text" id="etl-question" placeholder="e.g. What is RAG?" value="What is RAG?" />
+        <button id="ask-btn" onclick="callAsk()">Ask</button>
+      </div>
+      <div class="response-box" id="ask-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('ask')">Clear</button>
+        </div>
+        <div class="response-content" id="ask-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: Tool Calling ══════════════════ -->
+<div class="tab-panel" id="tab-tools">
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/tools/chat</span>
+      </div>
+      <h2>Tool Calling</h2>
+      <p>The LLM can autonomously invoke registered Java methods to fetch data it does not know. The model decides <em>when</em> to call a tool and <em>what arguments</em> to pass — your code never drives the loop manually.</p>
+
+      <div class="tools-list">
+        <div class="tools-list-label">Registered tools</div>
+        <div class="tool-item">
+          <div class="tool-name">getCurrentWeather(city)</div>
+          <div class="tool-desc">Get the current weather conditions and temperature for a specified city</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">getWeatherForecast(city, days)</div>
+          <div class="tool-desc">Get a multi-day weather forecast (1–5 days) for a specified city</div>
+        </div>
+      </div>
+
+      <div class="examples-label">Try asking:</div>
+      <div class="example-chips">
+        <button class="example-chip" onclick="setToolPrompt(this)">What's the weather in Warsaw?</button>
+        <button class="example-chip" onclick="setToolPrompt(this)">Compare weather in Tokyo and Sydney</button>
+        <button class="example-chip" onclick="setToolPrompt(this)">3-day forecast for Paris</button>
+        <button class="example-chip" onclick="setToolPrompt(this)">Is Łódź hotter than Warsaw right now?</button>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="tools-input" placeholder="Ask anything that may need weather data…" value="What's the weather in London?" />
+        <button id="tools-btn" onclick="callTools()">Send</button>
+      </div>
+
+      <div class="response-box" id="tools-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('tools')">Clear</button>
+        </div>
+        <div class="response-content" id="tools-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: Metrics ══════════════════ -->
+<div class="tab-panel" id="tab-metrics">
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/actuator/metrics/*</span>
+      </div>
+      <h2>Spring AI Metrics</h2>
+      <p>Token usage reported by Spring AI via Micrometer and exposed through Spring Boot Actuator. Go to other tabs, make some API calls, then refresh here to watch the counters grow.</p>
+
+      <div class="metrics-controls">
+        <button class="metrics-refresh-btn" onclick="loadMetrics()">Refresh</button>
+        <label class="auto-refresh-label">
+          <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh(this.checked)" />
+          Auto-refresh every 3s
+        </label>
+        <span id="metrics-timestamp" class="metrics-timestamp"></span>
+      </div>
+
+      <div class="metrics-grid" id="metrics-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: Recursive Advisor ══════════════════ -->
+<div class="tab-panel" id="tab-recursive">
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/recursive/chat</span>
+      </div>
+      <h2>Recursive Advisor (ToolCallAdvisor)</h2>
+      <p><code>ToolCallAdvisor</code> is Spring AI's built-in recursive advisor. Unlike simple tool calling — where the ChatClient delegates execution to the model and stops — this advisor <em>owns the loop</em>: it disables the model's internal tool execution and drives the full <strong>Thought → Action → Observation</strong> cycle itself, repeating until the LLM produces a final answer with no outstanding tool calls.</p>
+
+      <!-- Loop diagram -->
+      <div class="loop-diagram">
+        <div class="loop-row">
+          <div class="loop-box user">User Message</div>
+        </div>
+        <div class="loop-arrow-v">&#8595;</div>
+        <div class="loop-row">
+          <div class="loop-box llm">LLM (Reasoning)</div>
+          <div class="loop-arrow-h">&#8592;</div>
+          <div class="loop-box tool">Tool Execution</div>
+        </div>
+        <div class="loop-cond">&#8635; loop while tool calls present</div>
+        <div class="loop-arrow-v">&#8595; no more tool calls</div>
+        <div class="loop-row">
+          <div class="loop-box answer">Final Answer</div>
+        </div>
+      </div>
+
+      <p style="margin-bottom:1.2rem">The same weather tools from the <em>Tool Calling</em> tab are registered. Try prompts that naturally require <strong>multiple tool calls</strong> — the advisor will keep looping until all facts are gathered.</p>
+
+      <div class="examples-label">Try asking (multi-step):</div>
+      <div class="example-chips">
+        <button class="example-chip" onclick="setRecursivePrompt(this)">Compare weather in Tokyo, Paris and London — which is warmest?</button>
+        <button class="example-chip" onclick="setRecursivePrompt(this)">3-day forecast for Berlin and Sydney — where would you rather be?</button>
+        <button class="example-chip" onclick="setRecursivePrompt(this)">Is Warsaw hotter than Łódź? Show forecasts for both.</button>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="recursive-input" placeholder="Ask something that needs multiple tool calls…" value="Compare weather in Tokyo, Paris and London — which is warmest?" />
+        <button id="recursive-btn" onclick="callRecursive()">Send</button>
+      </div>
+
+      <div class="response-box" id="recursive-response">
+        <div class="response-header">
+          <span class="response-label">Response</span>
+          <button class="clear-btn" onclick="clearResponse('recursive')">Clear</button>
+        </div>
+        <div class="response-content" id="recursive-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Tab switching ──────────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'metrics') loadMetrics();
+  }
+
+  // ── Generic API request ───────────────────────────────────────
+  async function request(url, options, btnId, responseBoxId, contentId, renderFn) {
+    const btn = document.getElementById(btnId);
+    const box = document.getElementById(responseBoxId);
+    const content = document.getElementById(contentId);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Loading\u2026';
+    box.classList.remove('visible');
+    content.className = 'response-content';
+
+    try {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      if (!res.ok) {
+        content.classList.add('error');
+        content.textContent = `HTTP ${res.status}: ${text}`;
+      } else {
+        renderFn(content, text);
+      }
+    } catch (err) {
+      content.classList.add('error');
+      content.textContent = `Network error: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel[btnId];
+      box.classList.add('visible');
+    }
+  }
+
+  const originalLabel = {
+    'simple-btn': 'Send',
+    'expert-btn': 'Send',
+    'structured-btn': 'Send',
+    'vision-btn': 'Recognise Image',
+    'ingest-btn': 'Ingest Text',
+    'ask-btn': 'Ask',
+    'tools-btn': 'Send',
+    'recursive-btn': 'Send',
+  };
+
+  const plainRender = (el, text) => { el.textContent = text; };
+
+  function callSimple() {
+    const msg = document.getElementById('simple-input').value.trim();
+    if (!msg) return;
+    request(`/chat/simple?message=${encodeURIComponent(msg)}`, {},
+      'simple-btn', 'simple-response', 'simple-content', plainRender);
+  }
+
+  function callExpert() {
+    const msg = document.getElementById('expert-input').value.trim();
+    if (!msg) return;
+    request(`/chat/jokes?message=${encodeURIComponent(msg)}`, {},
+      'expert-btn', 'expert-response', 'expert-content', plainRender);
+  }
+
+  function callStructured() {
+    const name = document.getElementById('structured-input').value.trim();
+    if (!name) return;
+    request(`/chat/structured?name=${encodeURIComponent(name)}`, {},
+      'structured-btn', 'structured-response', 'structured-content',
+      (el, raw) => {
+        try {
+          const data = JSON.parse(raw);
+          el.innerHTML = `
+            <table class="actor-table">
+              <tr><th>Field</th><th>Value</th></tr>
+              <tr><td>Name</td><td>${esc(data.name)}</td></tr>
+              <tr><td>Famous Movie</td><td>${esc(data.famousMovie)}</td></tr>
+              <tr><td>Birth Year</td><td>${esc(String(data.birthYear))}</td></tr>
+            </table>`;
+        } catch {
+          el.textContent = raw;
+        }
+      }
+    );
+  }
+
+  // ── ETL / RAG ────────────────────────────────────────────────
+  function animatePipeline() {
+    const steps = ['step-extract', 'step-transform', 'step-load'];
+    steps.forEach(id => document.getElementById(id).classList.remove('active'));
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < steps.length) {
+        document.getElementById(steps[i]).classList.add('active');
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 400);
+  }
+
+  function callIngest() {
+    const text = document.getElementById('etl-text').value.trim();
+    if (!text) return;
+    animatePipeline();
+    const body = new URLSearchParams({ text });
+    request('/etl/ingest', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() },
+      'ingest-btn', 'ingest-response', 'ingest-content',
+      (el, raw) => {
+        try {
+          const data = JSON.parse(raw);
+          el.innerHTML = `<div class="ingest-result">&#10003; Ingested successfully &mdash; split into <strong>${data.chunks}</strong> chunk${data.chunks !== 1 ? 's' : ''} and stored in the vector store.</div>`;
+        } catch {
+          el.textContent = raw;
+        }
+      }
+    );
+  }
+
+  function callAsk() {
+    const question = document.getElementById('etl-question').value.trim();
+    if (!question) return;
+    request(`/etl/ask?question=${encodeURIComponent(question)}`, {},
+      'ask-btn', 'ask-response', 'ask-content', plainRender);
+  }
+
+  // ── Metrics ──────────────────────────────────────────────────
+  const METRICS = [
+    { name: 'gen_ai.client.token.usage',  label: 'Total Token Usage' },
+    { name: 'gen_ai.client.operation',  label: 'Duration And Count' },
+    { name: 'gen_ai.client.operation.active', label: 'Active Tasks' },
+  ];
+
+  let autoRefreshTimer = null;
+
+  function toggleAutoRefresh(enabled) {
+    if (enabled) {
+      autoRefreshTimer = setInterval(loadMetrics, 3000);
+    } else {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  }
+
+  async function loadMetrics() {
+    await Promise.all(METRICS.map(m => fetchAndRender(m)));
+    document.getElementById('metrics-timestamp').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+  }
+
+  async function fetchAndRender({ name, label }) {
+    const id = 'mc-' + name.replace(/\./g, '-');
+    let card = document.getElementById(id);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'metric-card';
+      card.id = id;
+      document.getElementById('metrics-grid').appendChild(card);
+    }
+
+    let data = null;
+    try {
+      const res = await fetch('/actuator/metrics/' + encodeURIComponent(name));
+      if (res.ok) data = await res.json();
+    } catch (_) {}
+
+    if (!data || !data.measurements || data.measurements.length === 0) {
+      card.innerHTML = `
+        <div class="metric-card-name">${esc(name)}</div>
+        <div class="metric-no-data">No data yet — make some API calls first</div>`;
+      return;
+    }
+
+    const rows = data.measurements.map(m => `
+      <div class="stat-row">
+        <span class="stat-label">${esc(m.statistic)}</span>
+        <span class="stat-value">${fmtNum(m.value)}</span>
+      </div>`).join('');
+
+    const tags = data.availableTags && data.availableTags.length
+      ? `<div class="metric-tags-note">Tags: ${data.availableTags.map(t => esc(t.tag)).join(', ')}</div>`
+      : '';
+
+    card.innerHTML = `<div class="metric-card-name">${esc(name)}</div>${rows}${tags}`;
+  }
+
+  function fmtNum(n) {
+    return Number.isInteger(n) ? n.toLocaleString() : Number(n.toFixed(2)).toLocaleString();
+  }
+
+  // ── Recursive Advisor ────────────────────────────────────────
+  function setRecursivePrompt(btn) {
+    document.getElementById('recursive-input').value = btn.textContent;
+    document.getElementById('recursive-input').focus();
+  }
+
+  function callRecursive() {
+    const msg = document.getElementById('recursive-input').value.trim();
+    if (!msg) return;
+    request(`/recursive/chat?message=${encodeURIComponent(msg)}`, {},
+      'recursive-btn', 'recursive-response', 'recursive-content', plainRender);
+  }
+
+  // ── Tool Calling ─────────────────────────────────────────────
+  function setToolPrompt(btn) {
+    document.getElementById('tools-input').value = btn.textContent;
+    document.getElementById('tools-input').focus();
+  }
+
+  function callTools() {
+    const msg = document.getElementById('tools-input').value.trim();
+    if (!msg) return;
+    request(`/tools/chat?message=${encodeURIComponent(msg)}`, {},
+      'tools-btn', 'tools-response', 'tools-content', plainRender);
+  }
+
+  // ── Image Recognition ─────────────────────────────────────────
+  let selectedFile = null;
+
+  function handleFileSelect(file) {
+    if (!file) return;
+    selectedFile = file;
+    showPreview(file);
+  }
+
+  function showPreview(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('preview-img').src = e.target.result;
+      document.getElementById('preview-wrap').style.display = 'block';
+      document.getElementById('drop-zone').style.display = 'none';
+      document.getElementById('vision-btn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() {
+    selectedFile = null;
+    document.getElementById('vision-file').value = '';
+    document.getElementById('preview-img').src = '';
+    document.getElementById('preview-wrap').style.display = 'none';
+    document.getElementById('drop-zone').style.display = 'block';
+    document.getElementById('vision-btn').disabled = true;
+    clearResponse('vision');
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+  }
+
+  function handleDragLeave() {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleFileSelect(file);
+  }
+
+  function callVision() {
+    if (!selectedFile) return;
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    request('/multimodal/vision', { method: 'POST', body: formData },
+      'vision-btn', 'vision-response', 'vision-content', plainRender);
+  }
+
+  // ── Shared helpers ────────────────────────────────────────────
+  function clearResponse(prefix) {
+    document.getElementById(prefix + '-response').classList.remove('visible');
+    const content = document.getElementById(prefix + '-content');
+    content.textContent = '';
+    content.innerHTML = '';
+    content.className = 'response-content';
+  }
+
+  document.querySelectorAll('input[type="text"]').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') input.closest('.card').querySelector('button:not(.clear-btn)').click();
+    });
+  });
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
