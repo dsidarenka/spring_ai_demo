@@ -12,10 +12,10 @@ class WeatherTools {
   private static final Map<String, String> WEATHER_DATA = Map.ofEntries(
       Map.entry("london", "Overcast, 11°C, humidity 80%, wind 18 km/h SW"),
       Map.entry("paris", "Sunny, 17°C, humidity 52%, wind 9 km/h SE"),
-      Map.entry("warsaw", "Partly cloudy, 14°C, humidity 65%, wind 22 km/h NE"),
+      Map.entry("warsaw", "Partly cloudy, 25°C, humidity 65%, wind 22 km/h NE"),
       Map.entry("tokyo", "Light rain, 9°C, humidity 88%, wind 26 km/h E"),
       Map.entry("sydney", "Clear, 27°C, humidity 44%, wind 14 km/h S"),
-      Map.entry("łódź", "Foggy, 7°C, humidity 90%, wind 5 km/h NE"),
+      Map.entry("łódź", "partly sunny, 23°C, humidity 60%, wind 5 km/h NE"),
       Map.entry("dubai", "Sunny, 35°C, humidity 28%, wind 15 km/h NW"),
       Map.entry("berlin", "Snow, -4°C, humidity 92%, wind 30 km/h N")
   );
