@@ -591,6 +591,56 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Traces table ── */
+    .traces-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+
+    .traces-table th {
+      text-align: left;
+      padding: 0.4rem 0.7rem;
+      background: #f0f4ff;
+      color: #555;
+      font-weight: 600;
+      border-bottom: 2px solid #dde1e7;
+      white-space: nowrap;
+    }
+
+    .traces-table td {
+      padding: 0.45rem 0.7rem;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+
+    .traces-table tr:last-child td { border-bottom: none; }
+
+    .traces-table .num-col {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #1a73e8;
+      white-space: nowrap;
+    }
+
+    .traces-table .msg-col {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #444;
+    }
+
+    .traces-empty {
+      color: #bbb;
+      font-style: italic;
+      font-size: 0.88rem;
+      padding: 1rem 0;
+      text-align: center;
+    }
+
     /* ── Prompt Comparison tab ── */
     .compare-layout {
       max-width: 1200px;
@@ -930,6 +980,22 @@
       <div class="metrics-grid" id="metrics-grid"></div>
     </div>
 
+    <!-- Request Traces -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">GET</span>
+        <span class="endpoint-path">/traces</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
+        <h2>Request Traces</h2>
+        <button class="clear-btn" onclick="clearTraces()">Clear</button>
+      </div>
+      <p>Per-request token usage captured from every AI call across all tabs. Newest entries appear first.</p>
+      <div id="traces-container">
+        <div class="traces-empty">No traces yet — make some API calls first</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1193,9 +1259,52 @@
   }
 
   async function loadMetrics() {
-    await Promise.all(METRICS.map(m => fetchAndRender(m)));
+    await Promise.all([
+      ...METRICS.map(m => fetchAndRender(m)),
+      loadTraces(),
+    ]);
     document.getElementById('metrics-timestamp').textContent =
       'Updated ' + new Date().toLocaleTimeString();
+  }
+
+  async function loadTraces() {
+    const container = document.getElementById('traces-container');
+    try {
+      const res = await fetch('/traces');
+      if (!res.ok) return;
+      const traces = await res.json();
+      if (traces.length === 0) {
+        container.innerHTML = '<div class="traces-empty">No traces yet — make some API calls first</div>';
+        return;
+      }
+      const rows = traces.slice().reverse().map((t, i) => `
+        <tr>
+          <td class="num-col">${traces.length - i}</td>
+          <td style="white-space:nowrap;color:#888">${new Date(t.timestamp).toLocaleTimeString()}</td>
+          <td><code style="font-size:0.8rem;color:#1a73e8">${esc(t.endpoint)}</code></td>
+          <td class="msg-col" title="${esc(t.userText)}">${esc(t.userText)}</td>
+          <td class="num-col">${t.promptTokens ?? '—'}</td>
+          <td class="num-col">${t.completionTokens ?? '—'}</td>
+          <td class="num-col">${t.totalTokens ?? '—'}</td>
+        </tr>`).join('');
+      container.innerHTML = `
+        <table class="traces-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Time</th><th>Endpoint</th><th>Message</th>
+              <th>Prompt</th><th>Completion</th><th>Total</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch (_) {
+      container.innerHTML = '<div class="traces-empty">Failed to load traces</div>';
+    }
+  }
+
+  async function clearTraces() {
+    await fetch('/traces', { method: 'DELETE' });
+    loadTraces();
   }
 
   async function fetchAndRender({ name, label }) {

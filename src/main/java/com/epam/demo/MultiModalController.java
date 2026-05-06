@@ -16,6 +16,9 @@ public class MultiModalController {
   @Autowired
   private ChatClient.Builder chatClientBuilder;
 
+  @Autowired
+  private TraceService traceService;
+
   /**
    * Multimodal vision: describes what is pictured in the uploaded image.
    */
@@ -24,12 +27,13 @@ public class MultiModalController {
     var mimeType = MimeTypeUtils.parseMimeType(
         file.getContentType() != null ? file.getContentType() : "image/jpeg");
 
-    ChatClient chatClient = chatClientBuilder.build();
-
-    return chatClient.prompt()
+    var chatResponse = chatClientBuilder.build()
+        .prompt()
         .user(u -> u.text("Describe in detail what you see in this image.")
             .media(mimeType, file.getResource()))
         .call()
-        .content();
+        .chatResponse();
+    traceService.recordFromResponse("/multimodal/vision", "image upload", chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 }

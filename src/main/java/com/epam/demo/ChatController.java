@@ -19,17 +19,21 @@ class ChatController {
   @Autowired
   private ChatClient.Builder chatClientBuilder;
 
+  @Autowired
+  private TraceService traceService;
+
   /**
    * Simple synchronous call returning LLM response as a String
    */
   @GetMapping("/simple")
   public String simpleChat(String message) {
-    ChatClient chatClient = chatClientBuilder.build();
-
-    return chatClient.prompt()
+    var chatResponse = chatClientBuilder.build()
+        .prompt()
         .user(message)
         .call()
-        .content();
+        .chatResponse();
+    traceService.recordFromResponse("/chat/simple", message, chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 
   @Value("classpath:system_prompt.txt")
@@ -44,38 +48,39 @@ class ChatController {
 
   @GetMapping("/jokes")
   public String systemPromt(String message) {
-    ChatClient chatClient = chatClientBuilder
-        //.defaultSystem(systemPrompt)
-        .build();
-
-    return chatClient.prompt()
+    var chatResponse = chatClientBuilder.build()
+        .prompt()
         .user(message)
         .system(systemPrompt)
         .call()
-        .content();
+        .chatResponse();
+    traceService.recordFromResponse("/chat/jokes", message, chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 
-  /**
-   * Structured output mapping to a Java Record
-   */
   @GetMapping("/withprompt")
   public String chatWithPrompt(String message, String systemPrompt) {
-    ChatClient chatClient = chatClientBuilder.build();
-    var spec = chatClient.prompt().user(message);
+    var spec = chatClientBuilder.build()
+        .prompt()
+        .user(message);
     if (systemPrompt != null && !systemPrompt.isBlank()) {
       spec = spec.system(systemPrompt);
     }
-    return spec.call().content();
+    var chatResponse = spec.call().chatResponse();
+    traceService.recordFromResponse("/chat/withprompt", message, chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 
+  /**
+   * Structured output — uses .entity() so ChatResponse isn't accessible here;
+   * the trace is still recorded (without token counts) so the request appears in the list.
+   */
   @GetMapping("/structured")
   public ActorDetails getActorDetails(String name) {
-    ChatClient chatClient = chatClientBuilder.build();
-
-    return chatClient.prompt()
-        .user(u ->
-            u.text("Provide details for the actor: {name}")
-                .param("name", name))
+    traceService.record("/chat/structured", "actor: " + name, null, null, null);
+    return chatClientBuilder.build()
+        .prompt()
+        .user(u -> u.text("Provide details for the actor: {name}").param("name", name))
         .call()
         .entity(ActorDetails.class);
   }

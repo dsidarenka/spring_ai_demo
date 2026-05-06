@@ -17,6 +17,9 @@ class RecursiveAdvisorController {
   @Autowired
   private WeatherTools weatherTools;
 
+  @Autowired
+  private TraceService traceService;
+
   /**
    * Drives the Thought → Action → Observation cycle itself,
    * iterating until the LLM produces a final answer with no remaining tool calls.
@@ -25,12 +28,14 @@ class RecursiveAdvisorController {
    */
   @GetMapping("/chat")
   public String chat(String message) {
-    return chatClientBuilder.build()
+    var chatResponse = chatClientBuilder.build()
         .prompt()
         .user(message)
         .tools(weatherTools)
         .advisors(ToolCallAdvisor.builder().build())
         .call()
-        .content();
+        .chatResponse();
+    traceService.recordFromResponse("/recursive/chat", message, chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 }

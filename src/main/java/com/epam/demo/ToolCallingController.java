@@ -17,17 +17,18 @@ class ToolCallingController {
   @Autowired
   private WeatherTools weatherTools;
 
-  /**
-   * Chat endpoint where the LLM can autonomously invoke registered tools
-   * to fetch weather data before composing its final response.
-   */
+  @Autowired
+  private TraceService traceService;
+
   @GetMapping("/chat")
   public String chat(@RequestParam String message) {
-    return chatClientBuilder.build()
+    var chatResponse = chatClientBuilder.build()
         .prompt()
         .user(message)
         .tools(weatherTools)
         .call()
-        .content();
+        .chatResponse();
+    traceService.recordFromResponse("/tools/chat", message, chatResponse);
+    return chatResponse.getResult().getOutput().getText();
   }
 }
