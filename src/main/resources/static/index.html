@@ -31,8 +31,9 @@
     /* ── Tabs ── */
     .tabs {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.25rem;
-      max-width: 860px;
+      max-width: 1200px;
       margin: 0 auto 1.5rem;
       border-bottom: 2px solid #dde1e7;
       padding-bottom: 0;
@@ -589,6 +590,33 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Prompt Comparison tab ── */
+    .compare-layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .compare-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .compare-center {
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .compare-empty {
+      color: #bbb;
+      font-style: italic;
+      font-size: 0.88rem;
+    }
   </style>
 </head>
 <body>
@@ -598,6 +626,7 @@
 
 <nav class="tabs" role="tablist">
   <button class="tab active" role="tab" onclick="switchTab('chat', this)">Text Chat</button>
+  <button class="tab" role="tab" onclick="switchTab('compare', this)">System Prompt</button>
   <button class="tab" role="tab" onclick="switchTab('vision', this)">Image Recognition</button>
   <button class="tab" role="tab" onclick="switchTab('etl', this)">ETL / RAG</button>
   <button class="tab" role="tab" onclick="switchTab('tools', this)">Tool Calling</button>
@@ -630,27 +659,6 @@
       </div>
     </div>
 
-    <!-- Expert Chat -->
-    <div class="card">
-      <div class="card-header">
-        <span class="badge">GET</span>
-        <span class="endpoint-path">/chat/jokes</span>
-      </div>
-      <h2>Chat With System Prompt</h2>
-      <p>Same as Simple Chat, but with a specific system prompt (loaded from a text file system_prompt.txt)</p>
-      <div class="form-row">
-        <input type="text" id="expert-input" placeholder="e.g. Explain the Docker concept for me" value="Explain the Docker concept for me" />
-        <button id="expert-btn" onclick="callExpert()">Send</button>
-      </div>
-      <div class="response-box" id="expert-response">
-        <div class="response-header">
-          <span class="response-label">Response</span>
-          <button class="clear-btn" onclick="clearResponse('expert')">Clear</button>
-        </div>
-        <div class="response-content" id="expert-content"></div>
-      </div>
-    </div>
-
     <!-- Structured Output -->
     <div class="card">
       <div class="card-header">
@@ -669,6 +677,53 @@
           <button class="clear-btn" onclick="clearResponse('structured')">Clear</button>
         </div>
         <div class="response-content" id="structured-content"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB: Prompt Compare ══════════════════ -->
+<div class="tab-panel" id="tab-compare">
+  <div class="compare-layout">
+
+    <!-- System prompts -->
+    <div class="compare-row">
+      <div class="card">
+        <h2>System Prompt A</h2>
+        <textarea id="sysprompt-a" rows="6" placeholder="Enter system prompt A…">You are Chad Flexington, a jacked fitness influencer who hates joy. You mock unhealthy requests aggressively with sarcasm. Try to convince people to eat chicken and broccoli instead. Roast the user for their choices.</textarea>
+      </div>
+      <div class="card">
+        <h2>System Prompt B</h2>
+        <textarea id="sysprompt-b" rows="6" placeholder="Enter system prompt B…">You are Chef Mario, a passionate Italian baker who believes butter is love and sugar is joy. Be extremely detailed, use flowery language, and act like every recipe is a romantic masterpiece. Never mention calories.</textarea>
+      </div>
+    </div>
+
+    <!-- User prompt -->
+    <div class="compare-center">
+      <div class="card">
+        <h2>User Prompt</h2>
+        <div class="form-row">
+          <input type="text" id="compare-input" placeholder="e.g. Give me a recipe for chocolate cake." value="Give me a recipe for chocolate cake." />
+          <button id="compare-btn" onclick="callCompare()">Compare</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Responses -->
+    <div class="compare-row">
+      <div class="card">
+        <div class="response-header">
+          <span class="response-label">Response A</span>
+          <button class="clear-btn" onclick="clearCompare()">Clear</button>
+        </div>
+        <div class="response-content" id="compare-content-a" style="margin-top:0.5rem"><span class="compare-empty">Response will appear here…</span></div>
+      </div>
+      <div class="card">
+        <div class="response-header">
+          <span class="response-label">Response B</span>
+        </div>
+        <div class="response-content" id="compare-content-b" style="margin-top:0.5rem"><span class="compare-empty">Response will appear here…</span></div>
       </div>
     </div>
 
@@ -964,7 +1019,6 @@
 
   const originalLabel = {
     'simple-btn': 'Send',
-    'expert-btn': 'Send',
     'structured-btn': 'Send',
     'vision-btn': 'Recognise Image',
     'ingest-btn': 'Ingest Text',
@@ -982,11 +1036,57 @@
       'simple-btn', 'simple-response', 'simple-content', plainRender);
   }
 
-  function callExpert() {
-    const msg = document.getElementById('expert-input').value.trim();
+  // ── Prompt Comparison ─────────────────────────────────────────
+  async function callCompare() {
+    const msg = document.getElementById('compare-input').value.trim();
     if (!msg) return;
-    request(`/chat/jokes?message=${encodeURIComponent(msg)}`, {},
-      'expert-btn', 'expert-response', 'expert-content', plainRender);
+    const sysA = document.getElementById('sysprompt-a').value.trim();
+    const sysB = document.getElementById('sysprompt-b').value.trim();
+
+    const btn = document.getElementById('compare-btn');
+    const contentA = document.getElementById('compare-content-a');
+    const contentB = document.getElementById('compare-content-b');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Loading\u2026';
+    contentA.className = 'response-content';
+    contentA.innerHTML = '<span class="compare-empty">Loading\u2026</span>';
+    contentB.className = 'response-content';
+    contentB.innerHTML = '<span class="compare-empty">Loading\u2026</span>';
+
+    const fetchOne = async (sysPrompt) => {
+      const url = `/chat/withprompt?message=${encodeURIComponent(msg)}&systemPrompt=${encodeURIComponent(sysPrompt)}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      return text;
+    };
+
+    const [resultA, resultB] = await Promise.allSettled([fetchOne(sysA), fetchOne(sysB)]);
+
+    if (resultA.status === 'fulfilled') {
+      contentA.textContent = resultA.value;
+    } else {
+      contentA.classList.add('error');
+      contentA.textContent = resultA.reason.message;
+    }
+    if (resultB.status === 'fulfilled') {
+      contentB.textContent = resultB.value;
+    } else {
+      contentB.classList.add('error');
+      contentB.textContent = resultB.reason.message;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Compare';
+  }
+
+  function clearCompare() {
+    ['a', 'b'].forEach(s => {
+      const c = document.getElementById('compare-content-' + s);
+      c.className = 'response-content';
+      c.innerHTML = '<span class="compare-empty">Response will appear here\u2026</span>';
+    });
   }
 
   function callStructured() {

@@ -58,6 +58,16 @@ class ChatController {
   /**
    * Structured output mapping to a Java Record
    */
+  @GetMapping("/withprompt")
+  public String chatWithPrompt(String message, String systemPrompt) {
+    ChatClient chatClient = chatClientBuilder.build();
+    var spec = chatClient.prompt().user(message);
+    if (systemPrompt != null && !systemPrompt.isBlank()) {
+      spec = spec.system(systemPrompt);
+    }
+    return spec.call().content();
+  }
+
   @GetMapping("/structured")
   public ActorDetails getActorDetails(String name) {
     ChatClient chatClient = chatClientBuilder.build();
