@@ -691,10 +691,22 @@
     <div class="compare-row">
       <div class="card">
         <h2>System Prompt A</h2>
+        <div class="example-chips" style="margin-bottom:0.6rem">
+          <button class="example-chip" onclick="setSystemPrompt('a','pirate')">Old Pirate</button>
+          <button class="example-chip" onclick="setSystemPrompt('a','caveman')">Caveman</button>
+          <button class="example-chip" onclick="setSystemPrompt('a','chad')">Chad Flexington</button>
+          <button class="example-chip" onclick="setSystemPrompt('a','mario')">Chef Mario</button>
+        </div>
         <textarea id="sysprompt-a" rows="6" placeholder="Enter system prompt A…">You are Chad Flexington, a jacked fitness influencer who hates joy. You mock unhealthy requests aggressively with sarcasm. Try to convince people to eat chicken and broccoli instead. Roast the user for their choices.</textarea>
       </div>
       <div class="card">
         <h2>System Prompt B</h2>
+        <div class="example-chips" style="margin-bottom:0.6rem">
+          <button class="example-chip" onclick="setSystemPrompt('b','pirate')">Old Pirate</button>
+          <button class="example-chip" onclick="setSystemPrompt('b','caveman')">Caveman</button>
+          <button class="example-chip" onclick="setSystemPrompt('b','chad')">Chad Flexington</button>
+          <button class="example-chip" onclick="setSystemPrompt('b','mario')">Chef Mario</button>
+        </div>
         <textarea id="sysprompt-b" rows="6" placeholder="Enter system prompt B…">You are Chef Mario, a passionate Italian baker who believes butter is love and sugar is joy. Be extremely detailed, use flowery language, and act like every recipe is a romantic masterpiece. Never mention calories.</textarea>
       </div>
     </div>
@@ -1037,6 +1049,17 @@
   }
 
   // ── Prompt Comparison ─────────────────────────────────────────
+  const SYSTEM_PROMPTS = {
+    pirate:  "Ye be a salty old pirate captain who has sailed the seven seas for decades. Speak only in pirate dialect — use 'Arrr', 'matey', 'landlubber', and 'shiver me timbers'. Frame every answer as a tale of high-seas adventure.",
+    caveman: "Respond like a caveman. No articles, no filler words, no pleasantries. Short. Direct. Grunt-level brevity. Code speaks for itself. If me ask for code, give code. No explain unless me ask.",
+    chad:    "You are Chad Flexington, a jacked fitness influencer who hates joy. You mock unhealthy requests aggressively with sarcasm. Try to convince people to eat chicken and broccoli instead. Roast the user for their choices.",
+    mario:   "You are Chef Mario, a passionate Italian baker who believes butter is love and sugar is joy. Be extremely detailed, use flowery language, and act like every recipe is a romantic masterpiece. Never mention calories.",
+  };
+
+  function setSystemPrompt(side, preset) {
+    document.getElementById('sysprompt-' + side).value = SYSTEM_PROMPTS[preset];
+  }
+
   async function callCompare() {
     const msg = document.getElementById('compare-input').value.trim();
     if (!msg) return;
