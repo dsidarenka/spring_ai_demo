@@ -19,21 +19,18 @@ class ChatController {
   @Autowired
   private ChatClient.Builder chatClientBuilder;
 
-  @Autowired
-  private TraceService traceService;
-
-  /**
-   * Simple synchronous call returning LLM response as a String
-   */
   @GetMapping("/simple")
   public String simpleChat(String message) {
-    var chatResponse = chatClientBuilder.build()
-        .prompt()
-        .user(message)
-        .call()
-        .chatResponse();
-    traceService.recordFromResponse("/chat/simple", message, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
+    EndpointContext.set("/chat/simple");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(message)
+          .call()
+          .content();
+    } finally {
+      EndpointContext.clear();
+    }
   }
 
   @Value("classpath:system_prompt.txt")
@@ -48,41 +45,47 @@ class ChatController {
 
   @GetMapping("/jokes")
   public String systemPromt(String message) {
-    var chatResponse = chatClientBuilder.build()
-        .prompt()
-        .user(message)
-        .system(systemPrompt)
-        .call()
-        .chatResponse();
-    traceService.recordFromResponse("/chat/jokes", message, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
+    EndpointContext.set("/chat/jokes");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(message)
+          .system(systemPrompt)
+          .call()
+          .content();
+    } finally {
+      EndpointContext.clear();
+    }
   }
 
   @GetMapping("/withprompt")
   public String chatWithPrompt(String message, String systemPrompt) {
-    var spec = chatClientBuilder.build()
-        .prompt()
-        .user(message);
-    if (systemPrompt != null && !systemPrompt.isBlank()) {
-      spec = spec.system(systemPrompt);
+    EndpointContext.set("/chat/withprompt");
+    try {
+      var spec = chatClientBuilder.build()
+          .prompt()
+          .user(message);
+      if (systemPrompt != null && !systemPrompt.isBlank()) {
+        spec = spec.system(systemPrompt);
+      }
+      return spec.call().content();
+    } finally {
+      EndpointContext.clear();
     }
-    var chatResponse = spec.call().chatResponse();
-    traceService.recordFromResponse("/chat/withprompt", message, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
   }
 
-  /**
-   * Structured output — uses .entity() so ChatResponse isn't accessible here;
-   * the trace is still recorded (without token counts) so the request appears in the list.
-   */
   @GetMapping("/structured")
   public ActorDetails getActorDetails(String name) {
-    traceService.record("/chat/structured", "actor: " + name, null, null, null);
-    return chatClientBuilder.build()
-        .prompt()
-        .user(u -> u.text("Provide details for the actor: {name}").param("name", name))
-        .call()
-        .entity(ActorDetails.class);
+    EndpointContext.set("/chat/structured");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(u -> u.text("Provide details for the actor: {name}").param("name", name))
+          .call()
+          .entity(ActorDetails.class);
+    } finally {
+      EndpointContext.clear();
+    }
   }
 
   public record ActorDetails(String name, String famousMovie, int birthYear) {

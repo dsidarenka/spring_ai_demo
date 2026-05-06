@@ -17,25 +17,19 @@ class RecursiveAdvisorController {
   @Autowired
   private WeatherTools weatherTools;
 
-  @Autowired
-  private TraceService traceService;
-
-  /**
-   * Drives the Thought → Action → Observation cycle itself,
-   * iterating until the LLM produces a final answer with no remaining tool calls.
-   * This advisor supports multi-step agentic reasoning across as many iterations
-   * as needed, managing conversation history between iterations automatically.
-   */
   @GetMapping("/chat")
   public String chat(String message) {
-    var chatResponse = chatClientBuilder.build()
-        .prompt()
-        .user(message)
-        .tools(weatherTools)
-        .advisors(ToolCallAdvisor.builder().build())
-        .call()
-        .chatResponse();
-    traceService.recordFromResponse("/recursive/chat", message, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
+    EndpointContext.set("/recursive/chat");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(message)
+          .tools(weatherTools)
+          .advisors(ToolCallAdvisor.builder().build())
+          .call()
+          .content();
+    } finally {
+      EndpointContext.clear();
+    }
   }
 }

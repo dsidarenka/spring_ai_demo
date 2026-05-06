@@ -23,39 +23,27 @@ class EtlExampleController {
   @Autowired
   private ChatClient.Builder chatClientBuilder;
 
-  @Autowired
-  private TraceService traceService;
-
-  /**
-   * ETL pipeline: Extract raw text → Transform into chunks → Load embeddings into vector store.
-   */
   @PostMapping("/ingest")
   public IngestResult ingest(String text) {
-    // Extract
     List<Document> documents = List.of(new Document(text));
-
-    // Transform
     List<Document> chunks = new TokenTextSplitter().apply(documents);
-
-    // Load
     vectorStore.add(chunks);
-
     return new IngestResult(chunks.size());
   }
 
-  /**
-   * RAG query: retrieves relevant chunks from the vector store and answers using them as context.
-   */
   @GetMapping("/ask")
   public String ask(String question) {
-    var chatResponse = chatClientBuilder.build()
-        .prompt()
-        .user(question)
-        .advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
-        .call()
-        .chatResponse();
-    traceService.recordFromResponse("/etl/ask", question, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
+    EndpointContext.set("/etl/ask");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(question)
+          .advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
+          .call()
+          .content();
+    } finally {
+      EndpointContext.clear();
+    }
   }
 
   public record IngestResult(int chunks) {

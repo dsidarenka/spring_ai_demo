@@ -17,18 +17,18 @@ class ToolCallingController {
   @Autowired
   private WeatherTools weatherTools;
 
-  @Autowired
-  private TraceService traceService;
-
   @GetMapping("/chat")
   public String chat(@RequestParam String message) {
-    var chatResponse = chatClientBuilder.build()
-        .prompt()
-        .user(message)
-        .tools(weatherTools)
-        .call()
-        .chatResponse();
-    traceService.recordFromResponse("/tools/chat", message, chatResponse);
-    return chatResponse.getResult().getOutput().getText();
+    EndpointContext.set("/tools/chat");
+    try {
+      return chatClientBuilder.build()
+          .prompt()
+          .user(message)
+          .tools(weatherTools)
+          .call()
+          .content();
+    } finally {
+      EndpointContext.clear();
+    }
   }
 }
